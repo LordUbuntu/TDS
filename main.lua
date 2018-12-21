@@ -1,13 +1,17 @@
+-- Filler structure, to be filled in next merge.
+
+
+-- LOAD --
 function love.load()
-    x, y, w, h = 20, 20, 60, 20
+    --
 end
 
-function love.update(dt)
-    x = x + 1
-    y = y * 1.01
-end
-
+-- DRAW --
 function love.draw()
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("fill", x, y, w, h)
+    --
+end
+
+-- UPDATE --
+function love.update(dt)
+    --
 end
