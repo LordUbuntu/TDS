@@ -4,6 +4,7 @@
 
 -- LOAD --
 function love.load()
+<<<<<<< HEAD
 	-- player properties
     player = { speed = 100, width = 20, height = 50 }
     player.x = 50
@@ -14,6 +15,9 @@ function love.load()
 
     -- other
     shotgun_splash = 123
+=======
+    a, b, c = 1, 2, 3
+>>>>>>> modified main.lua
 end
 
 
