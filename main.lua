@@ -1,6 +1,3 @@
--- Filler structure, to be filled in next merge.
-
-
 -- LOAD --
 function love.load()
     --
