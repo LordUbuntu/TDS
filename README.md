@@ -1,2 +1,2 @@
-# TDS
-a simple top-down shooter game &amp; my first serious github project.
+# Top Down Shooter (TDS)
+A simple top-down shooter game using the love2d lua framework.
