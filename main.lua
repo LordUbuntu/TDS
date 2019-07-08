@@ -10,19 +10,12 @@ TODO:
 -- LOAD --
 function love.load()
 	width, height = love.graphics.getDimensions()
-	text = "none"
 
 	-- global properties
-	speed = 1
-	max_speed = 5
-	friction = 0.5
+	speed = 100
 
 	-- player properties
-	player = {
-		x = 50,
-		y = 50,
-		velocity = { x = 0, y = 0 }
-	}
+	player = { x = 50, y = 50 }
 
 end
 
@@ -35,8 +28,6 @@ function love.draw()
 	-- print information
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 10)
-
-	love.graphics.print("key: "..text, 0, 30)
 end
 
 -- UPDATE --
@@ -44,35 +35,19 @@ function love.update(dt)
 	mouse_x, mouse_y = love.mouse.getPosition()
 
 	-- move player by velocity amount
-	player.y = player.y + player.velocity.y
-	player.x = player.x + player.velocity.x
-	
-	-- apply friction to player motion
-	if player.velocity.y > 0 then
-		player.velocity.y = player.velocity.y - friction
-	elseif player.velocity.y < 0 then
-		player.velocity.y = player.velocity.y + friction
-	elseif player.velocity.x > 0 then
-		player.velocity.x = player.velocity.x - friction
-	elseif player.velocity.x < 0 then
-		player.velocity.x = player.velocity.x + friction
-	end
-
-	-- FIXME momvement is wonky, figure out x and y vector motion
 	if love.keyboard.isDown('w') then
-		player.velocity.y = player.velocity.y - speed
-	end
-	if love.keyboard.isDown('s') then
-		player.velocity.y = player.velocity.y + speed 
-	end
-	if love.keyboard.isDown('a') then
-		player.velocity.x = player.velocity.x - speed
-	end
-	if love.keyboard.isDown('d') then
-		player.velocity.x = player.velocity.x + speed
+		player.y = player.y - speed * dt
+	elseif love.keyboard.isDown('s') then
+		player.y = player.y + speed * dt
 	end
 
+	if love.keyboard.isDown('a') then
+		player.x = player.x - speed * dt
+	elseif love.keyboard.isDown('d') then
+		player.x = player.x + speed * dt
+	end
 
 	-- TODO cap speed
 	-- TODO boundry collision for window
+
 end
