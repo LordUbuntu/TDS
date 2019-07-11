@@ -1,53 +1,121 @@
---[[
-TODO:
-- Express player motion as the sum of y and x velocity vectors
-- take y and x input independently and simultaneously
-- limit player speed, and provide friction (also limit player position within window)
-- implement bullets
-- implement enemies
-]]--
+-- IDEA: instead of creating bullets, draw a shiny line for a moment and then do a quick calculation to determine if an enemy was in the line of fire
+-- TODO if mouse is held down go full auto with cooldown between shots
+-- TODO boundry collision for window
+-- improve movement ??
+-- TODO fix line to centre of character
+-- TODO find a way to abstract player movement or switch between controll modes (keyboard+mouse VS joystick)
+-- TODO collision detection (remove bullets from table on collision)
+
+
+-- HANDLERS --
+
+-- handle movement events?
+-- handle shoot event?
+-- etc?
+
+
+
+
+
+-- ??? --
+function make_bullet()
+	bullet = { x = player.x-5, y = player.y-2.5, speed = 1500 }
+	bullet.width = 10
+	bullet.height = 5
+	return bullet
+end
+
+
+
+
 
 -- LOAD --
 function love.load()
-	width, height = love.graphics.getDimensions()
-
-	-- global properties
-	speed = 100
+	love.mouse.setGrabbed(false)
 
 	-- player properties
-	player = { x = 50, y = 50 }
+	player = { x = 50, y = 50, speed = 100, shoot = function() end }
+	player.width = 20
+	player.height = 50
 
+	-- bullet properties
+	bullets = {}
 end
+
+
+
+
 
 -- DRAW --
 function love.draw()
-	-- draw placeholder player
-	love.graphics.rectangle("fill", player.x-5, player.y-5, 10, 10)
-	love.graphics.line(player.x, player.y, mouse_x, mouse_y)
+	for i, bullet in ipairs(bullets) do
+		love.graphics.rectangle("line", bullet.x, bullet.y, bullet.width, bullet.height)
+	end
+	love.graphics.rectangle("fill", player.x-10, player.y-25, player.width, player.height)
 
-	-- print information
+	mouse_x, mouse_y = love.mouse.getPosition()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 10)
+	love.graphics.line(player.x, player.y, mouse_x, mouse_y)
 end
+
+
+
+
 
 -- UPDATE --
 function love.update(dt)
-	mouse_x, mouse_y = love.mouse.getPosition()
 
-	-- move player by velocity amount
+	-- player movement
 	if love.keyboard.isDown('w') then
-		player.y = player.y - speed * dt
-	elseif love.keyboard.isDown('s') then
-		player.y = player.y + speed * dt
+		player.y = player.y - player.speed * dt
 	end
-
+	if love.keyboard.isDown('s') then
+		player.y = player.y + player.speed * dt
+	end
 	if love.keyboard.isDown('a') then
-		player.x = player.x - speed * dt
-	elseif love.keyboard.isDown('d') then
-		player.x = player.x + speed * dt
+		player.x = player.x - player.speed * dt
+	end
+	if love.keyboard.isDown('d') then
+		player.x = player.x + player.speed * dt
 	end
 
-	-- TODO cap speed
-	-- TODO boundry collision for window
+	-- move bullets
+	function oob(object)
+		if object.x < 0 or object.x > love.graphics.getWidth() then
+			return true
+		elseif object.y < 0 or object.y > love.graphics.getHeight() then
+			return true
+		end
+		return false
+	end
 
+	for i, bullet in ipairs(bullets) do
+		bullet.x = bullet.x + bullet.speed * dt
+		if oob(bullet) then
+			table.remove(bullets, i)
+		end
+	end
+
+end
+
+
+
+
+
+-- ??? --
+
+function love.mousepressed(x, y, button, istouch)
+	if button == 1 then	-- lmb click
+		-- determine direction
+		-- set speed according to x and y velocity from sin and cos of mouse x,y relative to player
+		-- set bullet to that area just outside player hitbox
+		table.insert(bullets, make_bullet())
+	end
+end
+
+function love.keypressed(key)
+	if key == "escape" then
+		love.event.push("quit")
+	end
 end
