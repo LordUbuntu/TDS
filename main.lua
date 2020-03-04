@@ -5,6 +5,7 @@
 -- LOAD --
 function love.load()
 <<<<<<< HEAD
+<<<<<<< HEAD
 	-- player properties
     player = { speed = 100, width = 20, height = 50 }
     player.x = 50
@@ -62,10 +63,18 @@ function love.draw()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 15)
 	love.graphics.line(player.x, player.y, mouse_x, mouse_y)
+=======
+	print("L - BEGIN")
+    
+	x, y = 100, 100
+
+    print("L - END")
+>>>>>>> motion experiment
 end
 
 
 
+<<<<<<< HEAD
 
 
 
@@ -103,3 +112,18 @@ function love.handlers.shoot(x, y)
     -- record bullet 
     table.insert(bullets, bullet)
 end
+=======
+-- UPDATE --
+function love.update(dt)
+	print(dt)
+    
+	x = x + 100 * dt
+	y = y + 100 * dt
+end
+
+-- DRAW --
+function love.draw()
+	love.graphics.rectangle("fill", x, y, 20, 60)
+    --
+end
+>>>>>>> motion experiment
