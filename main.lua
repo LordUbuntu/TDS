@@ -1,11 +1,14 @@
 -- TODO improve offset of bullets and set them in radius around player
 -- TODO ^^^ with line for player shoot too
 -- TODO make specialized bullet types
+-- TODO make specialized gun types
+-- TODO set up mechanics to allow for bullet-gun combinaitons
+-- TODO add player and projectile momentum
+-- TODO delete bullets that go past window from table
+-- XXX try having the bullets bounce against the screen boarders
 
 -- LOAD --
 function love.load()
-<<<<<<< HEAD
-<<<<<<< HEAD
 	-- player properties
     player = { speed = 100, width = 20, height = 50 }
     player.x = 50
@@ -16,11 +19,7 @@ function love.load()
 
     -- other
     shotgun_splash = 123
-=======
-    a, b, c = 1, 2, 3
->>>>>>> modified main.lua
 end
-
 
 -- UPDATE --
 function love.update(dt)
@@ -43,11 +42,7 @@ function love.update(dt)
 		bullet.x = bullet.x + bullet.dx * dt
         bullet.y = bullet.y + bullet.dy * dt
 	end
-    -- bullet interaction
-    -- TODO
 end
-
-
 
 -- DRAW --
 function love.draw()
@@ -63,18 +58,8 @@ function love.draw()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 15)
 	love.graphics.line(player.x, player.y, mouse_x, mouse_y)
-=======
-	print("L - BEGIN")
-    
-	x, y = 100, 100
-
-    print("L - END")
->>>>>>> motion experiment
 end
 
-
-
-<<<<<<< HEAD
 
 
 
@@ -84,7 +69,7 @@ function love.mousepressed(x, y, button, istouch)
 	if button == 1 then	-- lmb click
         love.event.push("shoot", x, y)
 	elseif button == 2 then -- rmb click
-        for i = 1, 5 do
+        for i = 1, 7 do
             love.event.push("shoot", 
                             x + math.random(shotgun_splash), 
                             y + math.random(shotgun_splash))
@@ -112,18 +97,3 @@ function love.handlers.shoot(x, y)
     -- record bullet 
     table.insert(bullets, bullet)
 end
-=======
--- UPDATE --
-function love.update(dt)
-	print(dt)
-    
-	x = x + 100 * dt
-	y = y + 100 * dt
-end
-
--- DRAW --
-function love.draw()
-	love.graphics.rectangle("fill", x, y, 20, 60)
-    --
-end
->>>>>>> motion experiment
