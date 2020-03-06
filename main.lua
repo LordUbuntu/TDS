@@ -9,7 +9,6 @@
 -- XXX try having the bullets bounce against the screen boarders
 
 -- This Patch
--- TODO rename player.speed and player.decay
 -- TODO make player redirection smoother (going in the opposite direction of ρ)
 
 
@@ -23,11 +22,14 @@
 -- LOAD --
 function love.load()
 	-- player properties
-    player = { speed = 50, width = 20, height = 50, x = 50, y = 50 }
+    player = {  dvel = 50, max_dvel = 20, kf = 0.5,
+                dx = 0, dy = 0, 
+                x = 50, y = 50, 
+                w = 20, h = 50, }
     player.dx = 0
     player.dy = 0
-    player.decay = 0.5
-    player.maxspeed = 20
+    player.kf = 0.5
+    player.max_dvel = 10
 
 	-- bullet table
 	bullets = {}
@@ -40,47 +42,47 @@ end
 -- UPDATE --
 function love.update(dt)
     -- cap speed
-    if player.dy > player.maxspeed or player.dy < -player.maxspeed then
+    if player.dy > player.max_dvel or player.dy < -player.max_dvel then
         player.dy = player.dy
     else
         -- otherwise accelerate in given direction
         if love.keyboard.isDown('w') then
-            player.dy = player.dy - player.speed * dt
+            player.dy = player.dy - player.dvel * dt
         end
         if love.keyboard.isDown('s') then
-            player.dy = player.dy + player.speed * dt
+            player.dy = player.dy + player.dvel * dt
         end
     end
     -- cap speed
-    if player.dx > player.maxspeed or player.dx < -player.maxspeed then
+    if player.dx > player.max_dvel or player.dx < -player.max_dvel then
         player.dx = player.dx
     else
         -- otherwise accelerate in given direction
         if love.keyboard.isDown('a') then
-            player.dx = player.dx - player.speed * dt
+            player.dx = player.dx - player.dvel * dt
         end
         if love.keyboard.isDown('d') then
-            player.dx = player.dx + player.speed * dt
+            player.dx = player.dx + player.dvel * dt
         end
     end
 
     -- decay player movement
     if player.dx > 0 then
-        player.dx = player.dx - player.decay
+        player.dx = player.dx - player.kf
     elseif player.dx < 0 then
-        player.dx = player.dx + player.decay
+        player.dx = player.dx + player.kf
     end
 
     if player.dy > 0 then
-        player.dy = player.dy - player.decay
+        player.dy = player.dy - player.kf
     elseif player.dy < 0 then
-        player.dy = player.dy + player.decay
+        player.dy = player.dy + player.kf
     end
 
-    if player.dx > -player.decay^2 and player.dx < player.decay^2 then
+    if player.dx > -player.kf^2 and player.dx < player.kf^2 then
         player.dx = 0
     end
-    if player.dy > -player.decay^2 and player.dy < player.decay^2 then
+    if player.dy > -player.kf^2 and player.dy < player.kf^2 then
         player.dy = 0
     end
 
@@ -88,7 +90,7 @@ function love.update(dt)
     player.x = player.x + player.dx
     player.y = player.y + player.dy 
     
-    tempspeed = player.speed * dt
+    tempspeed = player.dvel * dt
 
     -- wrap player position
     -- height, width = love.graphics.getDimensions()
@@ -120,7 +122,7 @@ function love.draw()
 	end
 
 	-- player
-	love.graphics.rectangle("fill", player.x-10, player.y-25, player.width, player.height)
+	love.graphics.rectangle("fill", player.x-10, player.y-25, player.w, player.h)
 
 	mouse_x, mouse_y = love.mouse.getPosition()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
