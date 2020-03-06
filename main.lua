@@ -10,12 +10,14 @@
 -- LOAD --
 function love.load()
 	-- player properties
-    player = { speed = 100, width = 20, height = 50 }
-    player.x = 50
-    player.y = 50
+    player = { speed = 50, width = 20, height = 50, x = 50, y = 50 }
+    player.dx = 0
+    player.dy = 0
+    player.decay = 0.5
 
 	-- bullet table
 	bullets = {}
+    bullets.decay = 0.25
 
     -- other
     shotgun_splash = 123
@@ -23,19 +25,49 @@ end
 
 -- UPDATE --
 function love.update(dt)
-	-- update player movement
+	-- update player momentum
 	if love.keyboard.isDown('w') then
-		player.y = player.y - player.speed * dt
+        player.dy = player.dy - player.speed * dt
 	end
 	if love.keyboard.isDown('s') then
-		player.y = player.y + player.speed * dt
+        player.dy = player.dy + player.speed * dt
 	end
 	if love.keyboard.isDown('a') then
-		player.x = player.x - player.speed * dt
+        player.dx = player.dx - player.speed * dt
 	end
 	if love.keyboard.isDown('d') then
-		player.x = player.x + player.speed * dt
+        player.dx = player.dx + player.speed * dt
 	end
+
+    tempspeed = player.speed * dt
+
+    -- decay player movement
+    if player.dx > 0 then
+        player.dx = player.dx - player.decay
+    elseif player.dx < 0 then
+        player.dx = player.dx + player.decay
+    end
+
+    if player.dy > 0 then
+        player.dy = player.dy - player.decay
+    elseif player.dy < 0 then
+        player.dy = player.dy + player.decay
+    end
+
+    if player.dx > -player.decay^2 and player.dx < player.decay^2 then
+        player.dx = 0
+    end
+    if player.dy > -player.decay^2 and player.dy < player.decay^2 then
+        player.dy = 0
+    end
+    -- TODO how do i make interval set to absolute 0 without interferring
+    --      with player movement?
+    
+    -- update player position
+	player.y = player.y + player.dy 
+	player.x = player.x + player.dx
+
+
 
     -- update bullet position
 	for _, bullet in ipairs(bullets) do
@@ -56,7 +88,9 @@ function love.draw()
 
 	mouse_x, mouse_y = love.mouse.getPosition()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
-	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 15)
+	love.graphics.print("dx: "..player.dx..", dy: "..player.dy, 0, 15)
+	love.graphics.print("speed: "..tempspeed, 0, 30)
+	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 45)
 	love.graphics.line(player.x - 10, player.y - 25, mouse_x, mouse_y)
 end
 
@@ -65,7 +99,7 @@ end
 
 
 -- EVENTS --
-function love.mousepressed(x, y, button, istouch)
+function love.mousepressed(x, y, button)
 	if button == 1 then	-- lmb click
         love.event.push("shoot", x, y)
 	elseif button == 2 then -- rmb click
@@ -82,6 +116,10 @@ function love.keypressed(key)
 	if key == "escape" then
 		love.event.push("quit")
 	end
+    if key == "space" then
+        player.dx = 0
+        player.dy = 0
+    end
 end
 
 -- HANDLERS --
@@ -90,7 +128,7 @@ function love.handlers.shoot(x, y)
     local bullet = { radius = 5, speed = 500 }
     bullet.x = player.x + 40 / 2
     bullet.y = player.y + 40 / 2
-    -- determine Δy and Δx from atan
+    -- determine dy and dx from atan
     local angle = math.atan2((y - bullet.y), (x - bullet.x))
     bullet.dx = bullet.speed * math.cos(angle)
     bullet.dy = bullet.speed * math.sin(angle)
