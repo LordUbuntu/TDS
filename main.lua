@@ -9,7 +9,6 @@
 -- XXX try having the bullets bounce against the screen boarders
 
 -- This Patch
--- TODO rename player.dvel and player.kf
 -- TODO make player redirection smoother (going in the opposite direction of ρ)
 
 
