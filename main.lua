@@ -57,7 +57,7 @@ function love.draw()
 	mouse_x, mouse_y = love.mouse.getPosition()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 15)
-	love.graphics.line(player.x, player.y, mouse_x, mouse_y)
+	love.graphics.line(player.x - 10, player.y - 25, mouse_x, mouse_y)
 end
 
 
@@ -71,8 +71,8 @@ function love.mousepressed(x, y, button, istouch)
 	elseif button == 2 then -- rmb click
         for i = 1, 7 do
             love.event.push("shoot", 
-                            x + math.random(shotgun_splash), 
-                            y + math.random(shotgun_splash))
+                            x + math.random(-shotgun_splash, shotgun_splash), 
+                            y + math.random(-shotgun_splash, shotgun_splash))
         end
     end
 end
