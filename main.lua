@@ -1,3 +1,4 @@
+-- Features
 -- TODO improve offset of bullets and set them in radius around player
 -- TODO ^^^ with line for player shoot too
 -- TODO make specialized bullet types
@@ -7,6 +8,19 @@
 -- TODO delete bullets that go past window from table
 -- XXX try having the bullets bounce against the screen boarders
 
+-- This Patch
+-- TODO rename player.speed and player.decay
+-- TODO set a player speed cap
+-- TODO make player redirection smoother (going in the opposite direction of ρ)
+
+
+
+
+
+
+
+
+
 -- LOAD --
 function love.load()
 	-- player properties
@@ -14,6 +28,7 @@ function love.load()
     player.dx = 0
     player.dy = 0
     player.decay = 0.5
+    player.maxspeed = 20
 
 	-- bullet table
 	bullets = {}
@@ -26,18 +41,27 @@ end
 -- UPDATE --
 function love.update(dt)
 	-- update player momentum
-	if love.keyboard.isDown('w') then
-        player.dy = player.dy - player.speed * dt
-	end
-	if love.keyboard.isDown('s') then
-        player.dy = player.dy + player.speed * dt
-	end
-	if love.keyboard.isDown('a') then
-        player.dx = player.dx - player.speed * dt
-	end
-	if love.keyboard.isDown('d') then
-        player.dx = player.dx + player.speed * dt
-	end
+    -- cap acceleration
+    if player.dy > player.maxspeed or player.dy < -player.maxspeed then
+        player.dy = player.dy
+    else
+        if love.keyboard.isDown('w') then
+            player.dy = player.dy - player.speed * dt
+        end
+        if love.keyboard.isDown('s') then
+            player.dy = player.dy + player.speed * dt
+        end
+    end
+    if player.dx > player.maxspeed or player.dx < -player.maxspeed then
+        player.dx = player.dx
+    else
+        if love.keyboard.isDown('a') then
+            player.dx = player.dx - player.speed * dt
+        end
+        if love.keyboard.isDown('d') then
+            player.dx = player.dx + player.speed * dt
+        end
+    end
 
     tempspeed = player.speed * dt
 
@@ -60,12 +84,23 @@ function love.update(dt)
     if player.dy > -player.decay^2 and player.dy < player.decay^2 then
         player.dy = 0
     end
-    -- TODO how do i make interval set to absolute 0 without interferring
-    --      with player movement?
-    
+
     -- update player position
-	player.y = player.y + player.dy 
-	player.x = player.x + player.dx
+    player.x = player.x + player.dx
+    player.y = player.y + player.dy 
+
+    -- wrap player position
+    -- height, width = love.graphics.getDimensions()
+    -- if player.y > height then
+        -- player.y = 0
+    -- elseif player.y < 0 then
+        -- player.y = height
+    -- end
+    -- if player.x > width then
+        -- player.x = 0
+    -- elseif player.x < 0 then
+        -- player.x = width
+    -- end
 
 
 
