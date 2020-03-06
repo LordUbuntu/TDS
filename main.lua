@@ -10,7 +10,6 @@
 
 -- This Patch
 -- TODO rename player.speed and player.decay
--- TODO set a player speed cap
 -- TODO make player redirection smoother (going in the opposite direction of ρ)
 
 
@@ -40,11 +39,11 @@ end
 
 -- UPDATE --
 function love.update(dt)
-	-- update player momentum
-    -- cap acceleration
+    -- cap speed
     if player.dy > player.maxspeed or player.dy < -player.maxspeed then
         player.dy = player.dy
     else
+        -- otherwise accelerate in given direction
         if love.keyboard.isDown('w') then
             player.dy = player.dy - player.speed * dt
         end
@@ -52,9 +51,11 @@ function love.update(dt)
             player.dy = player.dy + player.speed * dt
         end
     end
+    -- cap speed
     if player.dx > player.maxspeed or player.dx < -player.maxspeed then
         player.dx = player.dx
     else
+        -- otherwise accelerate in given direction
         if love.keyboard.isDown('a') then
             player.dx = player.dx - player.speed * dt
         end
@@ -62,8 +63,6 @@ function love.update(dt)
             player.dx = player.dx + player.speed * dt
         end
     end
-
-    tempspeed = player.speed * dt
 
     -- decay player movement
     if player.dx > 0 then
@@ -88,6 +87,8 @@ function love.update(dt)
     -- update player position
     player.x = player.x + player.dx
     player.y = player.y + player.dy 
+    
+    tempspeed = player.speed * dt
 
     -- wrap player position
     -- height, width = love.graphics.getDimensions()
