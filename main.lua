@@ -13,7 +13,14 @@
 
 
 
-
+-- XXX think about how player momentum is implemented,
+-- consider reimplementing with momentum being inherent in entities, acceleration
+-- then should also be inherent.
+-- dx = dx >= max_dv and max_dv or dx + dv * dt
+-- dy = dy >= max_dv and max_dv or dx + dv * dt
+--  decrement dx and dy relative to the proportion of the momentum in their
+--  respective vector accounting for the kf of the entity.
+--  implement intertia
 
 
 
@@ -21,19 +28,37 @@
 
 -- LOAD --
 function love.load()
-	-- player properties
-    player = {  dvel = 50, max_dvel = 20, kf = 0.5,
+	-- player table
+    player = {  dv = 50, max_dv = 10, kf = 0.5,
                 dx = 0, dy = 0, 
                 x = 50, y = 50, 
                 w = 20, h = 50, }
-    player.dx = 0
-    player.dy = 0
-    player.kf = 0.5
-    player.max_dvel = 10
+
+    -- constants
+    -- g = 9.89
+    -- initial player state
+    -- pl = {  max_v = 10, m = 10, kf = 0.5, dv = 50,
+            -- vx = 0, vy = 0,
+            -- x = 50, y = 50,
+            -- w = 20, h = 50, }
+    -- initial player forces
+    -- pl.F = pl.m * pl.dv
+    -- pl.Fn = pl.m * g
+    -- pl.Ff = pl.kf * pl.Fn
+
+    -- notes:
+    -- v = sqrt( vx^2 + vy^2 )
+    -- if v >= max_v then v = max_v
+    --      limit proportion of vx and vy by their proportion from v by max_v
+    -- if 'a' or 'd' then vx +- F * dt and dp = F * dt
+    -- if 'w' or 's' then vy +- F * dt and dp = F * dt
+    -- dp = F * dt
+    -- F = m * dv
+    -- Ff = kf * Fn
+
 
 	-- bullet table
 	bullets = {}
-    bullets.decay = 0.25
 
     -- other
     shotgun_splash = 123
@@ -41,44 +66,44 @@ end
 
 -- UPDATE --
 function love.update(dt)
-    -- cap speed
-    if player.dy > player.max_dvel or player.dy < -player.max_dvel then
+    -- cap speed for dy
+    if player.dy > player.max_dv or player.dy < -player.max_dv then
         player.dy = player.dy
     else
         -- otherwise accelerate in given direction
         if love.keyboard.isDown('w') then
-            player.dy = player.dy - player.dvel * dt
+            player.dy = player.dy - player.dv * dt
         end
         if love.keyboard.isDown('s') then
-            player.dy = player.dy + player.dvel * dt
+            player.dy = player.dy + player.dv * dt
         end
     end
-    -- cap speed
-    if player.dx > player.max_dvel or player.dx < -player.max_dvel then
+    -- cap speed for dx
+    if player.dx > player.max_dv or player.dx < -player.max_dv then
         player.dx = player.dx
     else
         -- otherwise accelerate in given direction
         if love.keyboard.isDown('a') then
-            player.dx = player.dx - player.dvel * dt
+            player.dx = player.dx - player.dv * dt
         end
         if love.keyboard.isDown('d') then
-            player.dx = player.dx + player.dvel * dt
+            player.dx = player.dx + player.dv * dt
         end
     end
 
-    -- decay player movement
+    -- decay player dx
     if player.dx > 0 then
         player.dx = player.dx - player.kf
     elseif player.dx < 0 then
         player.dx = player.dx + player.kf
     end
-
+    -- decay player dy
     if player.dy > 0 then
         player.dy = player.dy - player.kf
     elseif player.dy < 0 then
         player.dy = player.dy + player.kf
     end
-
+    -- stop if dx or dy is too small rel to kf
     if player.dx > -player.kf^2 and player.dx < player.kf^2 then
         player.dx = 0
     end
@@ -90,23 +115,6 @@ function love.update(dt)
     player.x = player.x + player.dx
     player.y = player.y + player.dy 
     
-    tempspeed = player.dvel * dt
-
-    -- wrap player position
-    -- height, width = love.graphics.getDimensions()
-    -- if player.y > height then
-        -- player.y = 0
-    -- elseif player.y < 0 then
-        -- player.y = height
-    -- end
-    -- if player.x > width then
-        -- player.x = 0
-    -- elseif player.x < 0 then
-        -- player.x = width
-    -- end
-
-
-
     -- update bullet position
 	for _, bullet in ipairs(bullets) do
 		bullet.x = bullet.x + bullet.dx * dt
@@ -127,8 +135,7 @@ function love.draw()
 	mouse_x, mouse_y = love.mouse.getPosition()
 	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
 	love.graphics.print("dx: "..player.dx..", dy: "..player.dy, 0, 15)
-	love.graphics.print("speed: "..tempspeed, 0, 30)
-	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 45)
+	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 30)
 	love.graphics.line(player.x - 10, player.y - 25, mouse_x, mouse_y)
 end
 
@@ -149,17 +156,20 @@ function love.mousepressed(x, y, button)
     end
 end
 
--- handle movement events?
 function love.keypressed(key)
 	if key == "escape" then
 		love.event.push("quit")
 	end
 end
 
+
+
+
+
 -- HANDLERS --
 function love.handlers.shoot(x, y)
     -- TODO set bullet outside radius from player
-    local bullet = { radius = 5, speed = 500 }
+    local bullet = { radius = 5, speed = 250, kf = 1 }
     bullet.x = player.x + 40 / 2
     bullet.y = player.y + 40 / 2
     -- determine dy and dx from atan
