@@ -8,19 +8,8 @@
 -- TODO delete bullets that go past window from table
 -- XXX try having the bullets bounce against the screen boarders
 
--- This Patch
--- TODO make player redirection smoother (going in the opposite direction of ρ)
 
 
-
--- XXX think about how player momentum is implemented,
--- consider reimplementing with momentum being inherent in entities, acceleration
--- then should also be inherent.
--- dx = dx >= max_dv and max_dv or dx + dv * dt
--- dy = dy >= max_dv and max_dv or dx + dv * dt
---  decrement dx and dy relative to the proportion of the momentum in their
---  respective vector accounting for the kf of the entity.
---  implement intertia
 
 
 
@@ -29,92 +18,65 @@
 -- LOAD --
 function love.load()
 	-- player table
-    player = {  dv = 50, max_dv = 10, kf = 0.5,
-                dx = 0, dy = 0, 
-                x = 50, y = 50, 
-                w = 20, h = 50, }
-
-    -- constants
-    -- g = 9.89
-    -- initial player state
-    -- pl = {  max_v = 10, m = 10, kf = 0.5, dv = 50,
-            -- vx = 0, vy = 0,
-            -- x = 50, y = 50,
-            -- w = 20, h = 50, }
-    -- initial player forces
-    -- pl.F = pl.m * pl.dv
-    -- pl.Fn = pl.m * g
-    -- pl.Ff = pl.kf * pl.Fn
-
-    -- notes:
-    -- v = sqrt( vx^2 + vy^2 )
-    -- if v >= max_v then v = max_v
-    --      limit proportion of vx and vy by their proportion from v by max_v
-    -- if 'a' or 'd' then vx +- F * dt and dp = F * dt
-    -- if 'w' or 's' then vy +- F * dt and dp = F * dt
-    -- dp = F * dt
-    -- F = m * dv
-    -- Ff = kf * Fn
-
+    pl = {  max_v = 10, dv = 30, kf = 0.5,
+            dx = 0, dy = 0,
+            x = 100, y = 100,
+            w = 20, h = 50, }
 
 	-- bullet table
 	bullets = {}
-
-    -- other
-    shotgun_splash = 123
 end
 
 -- UPDATE --
 function love.update(dt)
-    -- cap speed for dy
-    if player.dy > player.max_dv or player.dy < -player.max_dv then
-        player.dy = player.dy
-    else
-        -- otherwise accelerate in given direction
-        if love.keyboard.isDown('w') then
-            player.dy = player.dy - player.dv * dt
-        end
-        if love.keyboard.isDown('s') then
-            player.dy = player.dy + player.dv * dt
-        end
+
+    ------ HANDLE PLAYER MOTION ------
+    -- apply motion
+    if love.keyboard.isDown('d') then
+        pl.dx = pl.dx + pl.dv * dt
     end
-    -- cap speed for dx
-    if player.dx > player.max_dv or player.dx < -player.max_dv then
-        player.dx = player.dx
-    else
-        -- otherwise accelerate in given direction
-        if love.keyboard.isDown('a') then
-            player.dx = player.dx - player.dv * dt
-        end
-        if love.keyboard.isDown('d') then
-            player.dx = player.dx + player.dv * dt
-        end
+    if love.keyboard.isDown('a') then
+        pl.dx = pl.dx - pl.dv * dt
+    end
+    if love.keyboard.isDown('w') then
+        pl.dy = pl.dy - pl.dv * dt
+    end
+    if love.keyboard.isDown('s') then
+        pl.dy = pl.dy + pl.dv * dt
     end
 
-    -- decay player dx
-    if player.dx > 0 then
-        player.dx = player.dx - player.kf
-    elseif player.dx < 0 then
-        player.dx = player.dx + player.kf
-    end
-    -- decay player dy
-    if player.dy > 0 then
-        player.dy = player.dy - player.kf
-    elseif player.dy < 0 then
-        player.dy = player.dy + player.kf
-    end
-    -- stop if dx or dy is too small rel to kf
-    if player.dx > -player.kf^2 and player.dx < player.kf^2 then
-        player.dx = 0
-    end
-    if player.dy > -player.kf^2 and player.dy < player.kf^2 then
-        player.dy = 0
+    -- apply position
+    pl.x = pl.x + pl.dx
+    pl.y = pl.y + pl.dy
+
+    -- cap speed
+    pl.dx = pl.dx > pl.max_v and pl.max_v or pl.dx
+    pl.dx = pl.dx < -pl.max_v and -pl.max_v or pl.dx
+    pl.dy = pl.dy > pl.max_v and pl.max_v or pl.dy
+    pl.dy = pl.dy < -pl.max_v and -pl.max_v or pl.dy
+
+    -- apply friction
+    local py = math.abs(pl.dy / (math.sqrt(pl.dx^2 + pl.dy^2)))
+    local px = math.abs(pl.dx / (math.sqrt(pl.dx^2 + pl.dy^2)))
+
+    if pl.dy > -pl.kf and pl.dy < pl.kf then
+        pl.dy = 0
+    elseif pl.dy < -pl.kf^2 then
+        pl.dy = pl.dy + pl.kf^2 * py
+    elseif pl.dy > pl.kf^2 then
+        pl.dy = pl.dy - pl.kf^2 * py
     end
 
-    -- update player position
-    player.x = player.x + player.dx
-    player.y = player.y + player.dy 
-    
+    if pl.dx > -pl.kf and pl.dx < pl.kf then
+        pl.dx = 0
+    elseif pl.dx < -pl.kf^2 then
+        pl.dx = pl.dx + pl.kf^2 * px
+    elseif pl.dx > pl.kf^2 then
+        pl.dx = pl.dx - pl.kf^2 * px
+    end 
+
+
+
     -- update bullet position
 	for _, bullet in ipairs(bullets) do
 		bullet.x = bullet.x + bullet.dx * dt
@@ -130,13 +92,13 @@ function love.draw()
 	end
 
 	-- player
-	love.graphics.rectangle("fill", player.x-10, player.y-25, player.w, player.h)
+	love.graphics.rectangle("fill", pl.x, pl.y, pl.w, pl.h)
 
 	mouse_x, mouse_y = love.mouse.getPosition()
-	love.graphics.print("player: "..player.x..", "..player.y, 0, 0)
-	love.graphics.print("dx: "..player.dx..", dy: "..player.dy, 0, 15)
-	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 30)
-	love.graphics.line(player.x - 10, player.y - 25, mouse_x, mouse_y)
+	love.graphics.print("player: "..pl.x..", "..pl.y, 0, 0)
+	love.graphics.print("dx: "..pl.dx..", dy: "..pl.dy, 0, 30)
+	love.graphics.print("mouse: "..mouse_x..", "..mouse_y, 0, 45)
+	love.graphics.line(pl.x - 10, pl.y - 25, mouse_x, mouse_y)
 end
 
 
@@ -147,12 +109,6 @@ end
 function love.mousepressed(x, y, button)
 	if button == 1 then	-- lmb click
         love.event.push("shoot", x, y)
-	elseif button == 2 then -- rmb click
-        for i = 1, 7 do
-            love.event.push("shoot", 
-                            x + math.random(-shotgun_splash, shotgun_splash), 
-                            y + math.random(-shotgun_splash, shotgun_splash))
-        end
     end
 end
 
