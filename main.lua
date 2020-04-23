@@ -3,11 +3,7 @@
 -- TODO ^^^ with line for player shoot too
 -- TODO make specialized bullet types
 -- TODO make specialized gun types
--- TODO set up mechanics to allow for bullet-gun combinaitons
--- TODO add player and projectile momentum
--- TODO delete bullets that go past window from table
--- XXX try having the bullets bounce against the screen boarders
-
+-- TODO set up mechanics to allow for bullet-gun combinations
 
 
 
@@ -124,14 +120,18 @@ end
 
 -- HANDLERS --
 function love.handlers.shoot(x, y)
-    -- TODO set bullet outside radius from player
-    local bullet = { radius = 5, speed = 250, kf = 1 }
-    bullet.x = player.x + 40 / 2
-    bullet.y = player.y + 40 / 2
-    -- determine dy and dx from atan
+    -- create bullet table
+    local bullet = { radius = 5, dv = 1500 }
+
+    -- set initial bullet position
+    bullet.x = pl.x + 40 / 2
+    bullet.y = pl.y + 40 / 2
+
+    -- set bullet delta velocities
     local angle = math.atan2((y - bullet.y), (x - bullet.x))
-    bullet.dx = bullet.speed * math.cos(angle)
-    bullet.dy = bullet.speed * math.sin(angle)
+    bullet.dx = bullet.dv * math.cos(angle)
+    bullet.dy = bullet.dv * math.sin(angle)
+
     -- record bullet 
     table.insert(bullets, bullet)
 end
