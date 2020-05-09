@@ -2,9 +2,9 @@
 A rudimentary top-down shooter game using the [love2d](https://love2d.org) Lua game engine and some elbow grease.
 
 ## Features
-- [ ] high speed weighty player movement
-- [ ] two gun types
-- [ ] challenging enemies
+- high speed weighty player movement
+- two gun types
+- challenging enemies
 
 ## Controls
 * Use wasd keys to move they player character
