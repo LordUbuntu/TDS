@@ -3,16 +3,6 @@
 -- add collision detection for bullets and enemies, and for enemies and player (none for player and bullet)
 -- make enemies move towards player
 
-
--- XXX done
--- score is recorded and reported
--- improved gun kickback
--- gun spread for all weapons
--- removed shotgun, cooldowns, kickbacks, and bullet deviance
-
-
-
-
 -- LOAD --
 function love.load()
 	-- player table
@@ -123,6 +113,12 @@ function love.draw()
 end
 
 
+-- HELPERS --
+function collision(entity1, entity2)
+    -- check if entity1 collided with entity 2 vertically
+        -- and horizontally
+            -- if so return true, else false
+end
 
 
 
@@ -167,4 +163,7 @@ function love.handlers.shoot(x, y)
 
     -- record bullet 
     table.insert(bullets, bullet)
+end
+
+function love.handlers.damage(entity)
 end
