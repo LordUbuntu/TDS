@@ -4,6 +4,11 @@
 -- make enemies move towards player
 
 
+-- XXX done
+-- score is recorded and reported
+-- improved gun kickback
+-- gun spread for all weapons
+-- removed shotgun, cooldowns, kickbacks, and bullet deviance
 
 
 
@@ -16,13 +21,13 @@ function love.load()
             x = 100, y = 100,
             w = 5, h = 5 }
     pl.sprite = love.graphics.newImage("assets/sprites/player.png")
+    -- player score record
+    score = 0
+    high_score = tonumber(love.filesystem.read("score.txt"), 10)
+
 
 	-- bullet table
 	bullets = {}
-
-    -- shotgun properties
-    shotgun = { max_cooldown = 5, cooldown = 0,
-                shells = 5 }
 end
 
 -- UPDATE --
@@ -99,11 +104,6 @@ function love.update(dt)
 		bullet.x = bullet.x + bullet.dx * dt
         bullet.y = bullet.y + bullet.dy * dt
 	end
-
-    ----- HANDLE COOLDOWNS -----
-    if shotgun.cooldown > 0 then
-        shotgun.cooldown = shotgun.cooldown - 1 * dt
-    end
 end
 
 -- DRAW --
@@ -118,12 +118,8 @@ function love.draw()
     local angle = math.atan2(mouse_y - pl.y, mouse_x - pl.x) + math.pi / 2
     love.graphics.draw(pl.sprite, pl.x, pl.y, angle, 1, 1, pl.w, pl.h)
 
-    -- print the number of shotgun shells available
-    s = "   "
-    for i = 1, shotgun.shells do
-        s = s.."@"
-    end
-    love.graphics.print(math.abs(math.ceil(shotgun.cooldown))..s, 0, 15)
+    love.graphics.print(score, 0, 0)
+    love.graphics.print(high_score, 0, 15)
 end
 
 
@@ -133,15 +129,16 @@ end
 -- EVENTS --
 function love.mousepressed(x, y, button)
 	if button == 1 then	-- lmb click
-        love.event.push("shoot_pistol", x, y)
-    end
-    if button == 2 then -- rmb click
-        love.event.push("shoot_barrel", x, y)
+        love.event.push("shoot", x, y)
     end
 end
 
 function love.keypressed(key)
 	if key == "escape" then
+        if high_score < score then
+            love.window.showMessageBox("High Score", "You got a new High Score: "..score, "info", false)
+            love.filesystem.write("score.txt", score)
+        end
 		love.event.push("quit")
 	end
 end
@@ -151,10 +148,13 @@ end
 
 
 -- HANDLERS --
-function love.handlers.shoot_pistol(x, y)
+function love.handlers.shoot(x, y)
     -- create bullet table
-    local bullet = {  radius = 3, x = 0, y = 0,
-                dv = 1000, dx = 0, dy = 0 }
+    local bullet = {
+        radius = 2,
+        x = 0, y = 0,
+        dv = 1000, dx = 0, dy = 0,
+    }
 
     -- set initial bullet position
     bullet.x = pl.x
@@ -167,50 +167,4 @@ function love.handlers.shoot_pistol(x, y)
 
     -- record bullet 
     table.insert(bullets, bullet)
-
-    -- add kickback to player
-    pl.dx = pl.dx - (pl.dv * math.cos(angle)) / 32
-    pl.dy = pl.dy - (pl.dv * math.sin(angle)) / 32
-end
-
-function love.handlers.shoot_barrel(x, y)
-    -- do not allow another shot until the shotgun has cooled down
-    if shotgun.cooldown > 0 then
-        return
-    end
-
-    -- do not allow shots without shells
-    if shotgun.shells <= 0 then
-        return
-    end
-
-    -- create collecton of bullets
-    for i = 1, 5 do
-        -- create bullet table
-        local bullet = {  radius = 3, x = 0, y = 0,
-                    dv = 1000, dx = 0, dy = 0 }
-
-        -- set initial bullet position
-        bullet.x = pl.x
-        bullet.y = pl.y
-
-        -- set bullet delta velocities with a nieve spray
-        local angle = math.atan2((y - bullet.y), (x - bullet.x))
-        local spray = math.random(-250, 250)
-        bullet.dx = bullet.dv * math.cos(angle) + spray
-        bullet.dy = bullet.dv * math.sin(angle) + spray
-
-        -- add kickback to player foreach bullet
-        pl.dx = pl.dx - (pl.dv * math.cos(angle)) / 8
-        pl.dy = pl.dy - (pl.dv * math.sin(angle)) / 8
-
-        -- insert the bullet into the table
-        table.insert(bullets, bullet)
-    end
-
-    -- add cooldown to shotgun
-    shotgun.cooldown = shotgun.cooldown + 5
-
-    -- expend a shell
-    shotgun.shells = shotgun.shells - 1
 end
