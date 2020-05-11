@@ -1,24 +1,39 @@
 -- TODO
--- add health for player and enemies
--- add damage for bullets
+-- spawn enemies just outside screen
 -- make enemies move towards player
 -- make binaries and document build instructions
--- publish, merge branches, and archive repo
+-- polish game
+-- improve code maintainability and readability
+-- merge branches and archive repo
 
 
--- XXX done
--- collision detection
--- enemies added
+-- XXX DONE: feature --> collision detection and damage implemented
+-- add health for player and enemies
+-- add damage for bullets
+-- add damage for enemies
+-- remove bullet if it hits the enemy
+-- remove enemy if their hp is low enough
+-- give hit debuff after player hit
+-- end game on player death
+--
 
 
 
 -- LOAD --
 function love.load()
 	-- player table
-    pl = {  max_v = 10, dv = 30, kf = 0.5,
-            dx = 0, dy = 0,
-            x = 100, y = 100,
-            r = 10 }
+    pl = {  
+        -- player motion
+        max_v = 10, dv = 30, kf = 0.5,
+        dx = 0, dy = 0,
+        x = 100, y = 100,
+        r = 10,
+
+        -- player state
+        hit = false,
+        timeout = 0,
+        max_hp = 100, hp = 100,
+    }
     pl.sprite = love.graphics.newImage("assets/sprites/player.png")
     -- player score record
     score = 0
@@ -35,16 +50,21 @@ function love.load()
     -- enemies table
     enemies = {}
     enemy = {
+        -- enemy motion
         x = 200,
         y = 50,
         r = 10,
+
+        -- enemy state
+        hit = false,
+        max_hp = 100, hp = 100, 
+        power = 10,
     }
     table.insert(enemies, enemy)
 end
 
 -- UPDATE --
 function love.update(dt)
-
     ------ HANDLE PLAYER MOTION ------
     -- apply motion
     if love.keyboard.isDown('d') then
@@ -111,8 +131,8 @@ function love.update(dt)
 
 
 
+    ----- HANDLE BULLET MOVEMENT -----
 	for _, bullet in ipairs(bullets) do
-        ----- HANDLE BULLET MOVEMENT -----
 		bullet.x = bullet.x + bullet.dx * dt
         bullet.y = bullet.y + bullet.dy * dt
 	end
@@ -121,16 +141,46 @@ function love.update(dt)
 
     ----- HANDLE COLLISION DETECTION -----
     for _, bullet in ipairs(bullets) do
-        -- check if bullet collides with enemy
-        if collision(bullet, enemy) then
-            print("collision: bullet, enemy")
+        for bullet_index, enemy in ipairs(enemies) do
+            -- check if bullet collides with enemy
+            if collision(bullet, enemy) then
+                print("collision: bullet, enemy")
+                enemy.hit = true
+                enemy.hp = enemy.hp - bullet.power
+                table.remove(bullets, bullet_index)
+            else
+                enemy.hit = false
+            end
         end
     end
     for _, enemy in ipairs(enemies) do
         -- check if enemy collied with player
         if collision(enemy, pl) then
-            print("collision: enemy, player")
+                print("collision: enemy, player")
+                pl.hit = true
+        else
+                pl.hit = false
         end
+    end
+    if pl.hit then
+        if pl.timeout <= 0 then
+            pl.hp = pl.hp - (enemy.power - 1 * dt)
+            pl.timeout = 1
+        end
+    end
+    if pl.timeout > 0 then
+        pl.timeout = pl.timeout - 1 * dt
+    end
+
+    ----- REAP SOULS -----
+    for index, enemy in ipairs(enemies) do
+        if enemy.hp < 0 then
+            score = score + 1
+            table.remove(enemies, index)
+        end
+    end
+    if pl.hp < 0 then
+        love.event.push("game_over")
     end
 end
 
@@ -143,20 +193,37 @@ function love.draw()
 
     -- draw enemies
     for _, enemy in ipairs(enemies) do
+        redp = enemy.hp / enemy.max_hp
+        greenp = (enemy.max_hp - enemy.hp) / enemy.max_hp
+        love.graphics.setColor(redp, greenp, 0, 255)
         love.graphics.circle("line", enemy.x, enemy.y, enemy.r)
+        love.graphics.setColor(255, 255, 255, 255)
     end
 
     -- draw player
+    if pl.hit then
+        love.graphics.setColor(255, 0, 0, 255)
+    else
+        love.graphics.setColor(255, 255, 255, 255)
+    end
 	mouse_x, mouse_y = love.mouse.getPosition()
     local angle = math.atan2(mouse_y - pl.y, mouse_x - pl.x) + math.pi / 2
-    love.graphics.draw(pl.sprite, pl.x, pl.y, angle, 1, 1, pl.r / 2, pl.r / 2)
+    love.graphics.draw(pl.sprite, pl.x, pl.y, angle, 1, 1, pl.r, pl.r)
+    love.graphics.reset()
 
-    -- print hud
-    love.graphics.print(score, 0, 0)
-    love.graphics.print(high_score, 0, 15)
+    ----- PRINT HUD -----
+    -- reset color to opaque white
+    love.graphics.setColor(255, 255, 255, 255)
+    -- draw health bar with coloration
+    greenp = pl.hp / pl.max_hp
+    redp = (pl.max_hp - pl.hp) / pl.max_hp
+    love.graphics.setColor(redp, greenp, 0, 255)
+    love.graphics.rectangle("fill", 5, 5, pl.hp, 4) -- health bar
+    love.graphics.setColor(255, 255, 255, 255)
+    -- show score
+    love.graphics.print("score: "..score, 0, 15)
 end
 
--- HELPERS --
 function collision(entity1, entity2)
     -- assumes all entities are spheres and checks if they overlap
     local dx = entity1.x - entity2.x
@@ -198,9 +265,13 @@ end
 function love.handlers.shoot(x, y)
     -- create bullet table
     local bullet = {
+        -- bullet movement
         r = 2,
         x = 0, y = 0,
-        dv = 1000, dx = 0, dy = 0,
+        dv = 1000 / 2, dx = 0, dy = 0,
+        
+        -- bullet state
+        power = 20
     }
 
     -- set initial bullet position
@@ -216,5 +287,12 @@ function love.handlers.shoot(x, y)
     table.insert(bullets, bullet)
 end
 
-function love.handlers.damage(entity)
+function love.handlers.game_over()
+    -- check score
+    if high_score < score then
+        love.window.showMessageBox("High Score", "You got a new High Score: "..score, "info", false)
+        love.filesystem.write("score.txt", score)
+    end
+    love.window.showMessageBox("Game Over", "You managed to survive while defeating "..score.." enemies. However, your time has come to an end", "info", false)
+    love.event.push("quit")
 end
