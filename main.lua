@@ -1,20 +1,17 @@
 -- TODO
--- spawn enemies just outside screen
--- make enemies move towards player
+-- make enemies spawn out in radius instead
 -- make binaries and document build instructions
--- polish game
+-- polish game source
 -- improve code maintainability and readability
 -- merge branches and archive repo
 
 
--- XXX DONE: feature --> collision detection and damage implemented
--- add health for player and enemies
--- add damage for bullets
--- add damage for enemies
--- remove bullet if it hits the enemy
--- remove enemy if their hp is low enough
--- give hit debuff after player hit
--- end game on player death
+-- XXX DONE: feature --> enemies spawn at screen edge and pursue player
+-- spawn enemies outside screen
+-- make enemies move towards player
+-- enemies shrink when taking damage
+-- change the spawn mechanism to spawn one at a time rather than in batches, but at an increasing rate that doubles every 10 kills
+-- make player damage faster for more enemies (reduce enemy power to a fraction of an integer, deal it for each enemy colliding with player)
 --
 
 
@@ -24,9 +21,9 @@ function love.load()
 	-- player table
     pl = {  
         -- player motion
-        max_v = 10, dv = 30, kf = 0.5,
+        max_v = 10, dv = 70, kf = 0.70,
         dx = 0, dy = 0,
-        x = 100, y = 100,
+        x = 200, y = 200,
         r = 10,
 
         -- player state
@@ -48,19 +45,11 @@ function love.load()
 
 
     -- enemies table
-    enemies = {}
-    enemy = {
-        -- enemy motion
-        x = 200,
-        y = 50,
-        r = 10,
-
-        -- enemy state
-        hit = false,
-        max_hp = 100, hp = 100, 
-        power = 10,
+    enemies = {
+        score = 0, -- keeps track of every 10 points scored
+        cooldown = 0,
+        freq = 0.2, -- spawn rate
     }
-    table.insert(enemies, enemy)
 end
 
 -- UPDATE --
@@ -78,6 +67,15 @@ function love.update(dt)
     end
     if love.keyboard.isDown('s') then
         pl.dy = pl.dy + pl.dv * dt
+    end
+
+    -- machine gun
+    if love.mouse.isDown(1) then
+        local mouse = {
+            x = love.mouse.getX(),
+            y = love.mouse.getY(),
+        }
+        love.event.push("shoot", mouse.x, mouse.y)
     end
 
     -- stop player at window edge
@@ -112,7 +110,6 @@ function love.update(dt)
     -- apply friction proportional to vector
     local py = math.abs(pl.dy / (math.sqrt(pl.dx^2 + pl.dy^2)))
     local px = math.abs(pl.dx / (math.sqrt(pl.dx^2 + pl.dy^2)))
-
     if pl.dy > -pl.kf and pl.dy < pl.kf then
         pl.dy = 0
     elseif pl.dy < -pl.kf^2 then
@@ -120,7 +117,6 @@ function love.update(dt)
     elseif pl.dy > pl.kf^2 then
         pl.dy = pl.dy - pl.kf^2 * py
     end
-
     if pl.dx > -pl.kf and pl.dx < pl.kf then
         pl.dx = 0
     elseif pl.dx < -pl.kf^2 then
@@ -144,7 +140,6 @@ function love.update(dt)
         for bullet_index, enemy in ipairs(enemies) do
             -- check if bullet collides with enemy
             if collision(bullet, enemy) then
-                print("collision: bullet, enemy")
                 enemy.hit = true
                 enemy.hp = enemy.hp - bullet.power
                 table.remove(bullets, bullet_index)
@@ -153,34 +148,52 @@ function love.update(dt)
             end
         end
     end
-    for _, enemy in ipairs(enemies) do
+
+    pl.timeout = pl.timeout - 1 * dt
+    for index, enemy in ipairs(enemies) do
+        -- update enemy movement
+        local angle = math.atan2((pl.y - enemy.y), (pl.x - enemy.x))
+        enemy.dx = enemy.dv * math.cos(angle)
+        enemy.dy = enemy.dv * math.sin(angle)
+        enemy.x = enemy.x + enemy.dx * dt
+        enemy.y = enemy.y + enemy.dy * dt
         -- check if enemy collied with player
         if collision(enemy, pl) then
-                print("collision: enemy, player")
-                pl.hit = true
-        else
-                pl.hit = false
-        end
-    end
-    if pl.hit then
-        if pl.timeout <= 0 then
             pl.hp = pl.hp - (enemy.power - 1 * dt)
-            pl.timeout = 1
+            pl.hit = true
+        else
+            pl.hit = false
         end
-    end
-    if pl.timeout > 0 then
-        pl.timeout = pl.timeout - 1 * dt
-    end
-
-    ----- REAP SOULS -----
-    for index, enemy in ipairs(enemies) do
+        -- reap souls
         if enemy.hp < 0 then
             score = score + 1
+            enemies.score = enemies.score + 1
             table.remove(enemies, index)
         end
     end
+    -- end game if player dies
     if pl.hp < 0 then
         love.event.push("game_over")
+    end
+
+
+
+
+
+    ----- SPAWN ENEMIES -----
+    if enemies.cooldown > 0 then
+       enemies.cooldown = enemies.cooldown - enemies.freq * dt
+    else
+        if #enemies < 2^12 then
+            love.event.push("spawn_enemies")
+            print("enemy total: "..#enemies+1)
+        end
+        enemies.cooldown = 1
+    end
+    -- double spawn rate every 10 points
+    if enemies.score >= 10 then
+        enemies.score = 0
+        enemies.freq = enemies.freq + 0.2
     end
 end
 
@@ -188,28 +201,25 @@ end
 function love.draw()
 	-- draw bullets
 	for _, bullet in ipairs(bullets) do
+        love.graphics.setColor(200, 200, 200, 255)
         love.graphics.circle("fill", bullet.x, bullet.y, bullet.r)
 	end
 
     -- draw enemies
     for _, enemy in ipairs(enemies) do
-        redp = enemy.hp / enemy.max_hp
-        greenp = (enemy.max_hp - enemy.hp) / enemy.max_hp
-        love.graphics.setColor(redp, greenp, 0, 255)
-        love.graphics.circle("line", enemy.x, enemy.y, enemy.r)
-        love.graphics.setColor(255, 255, 255, 255)
+        love.graphics.setColor(255, 0, enemy.max_hp - enemy.hp, 255)
+        love.graphics.circle("line", enemy.x, enemy.y, enemy.r + enemy.hp / enemy.max_hp)
     end
 
     -- draw player
-    if pl.hit then
-        love.graphics.setColor(255, 0, 0, 255)
-    else
-        love.graphics.setColor(255, 255, 255, 255)
-    end
-	mouse_x, mouse_y = love.mouse.getPosition()
-    local angle = math.atan2(mouse_y - pl.y, mouse_x - pl.x) + math.pi / 2
-    love.graphics.draw(pl.sprite, pl.x, pl.y, angle, 1, 1, pl.r, pl.r)
-    love.graphics.reset()
+    love.graphics.setColor(255, 0, 255, 255)
+    love.graphics.circle("line", pl.x, pl.y, pl.r)
+    love.graphics.setColor(255, 255, 255, 255)
+
+	-- mouse_x, mouse_y = love.mouse.getPosition()
+    -- local angle = math.atan2(mouse_y - pl.y, mouse_x - pl.x) + math.pi / 2
+    -- love.graphics.draw(pl.sprite, pl.x, pl.y, angle, 1, 1, pl.r, pl.r)
+    -- love.graphics.reset()
 
     ----- PRINT HUD -----
     -- reset color to opaque white
@@ -222,8 +232,14 @@ function love.draw()
     love.graphics.setColor(255, 255, 255, 255)
     -- show score
     love.graphics.print("score: "..score, 0, 15)
+    love.graphics.print("high score: "..high_score, 0, 30)
 end
 
+
+
+
+
+-- HELPER FUNCTIONS --
 function collision(entity1, entity2)
     -- assumes all entities are spheres and checks if they overlap
     local dx = entity1.x - entity2.x
@@ -295,4 +311,48 @@ function love.handlers.game_over()
     end
     love.window.showMessageBox("Game Over", "You managed to survive while defeating "..score.." enemies. However, your time has come to an end", "info", false)
     love.event.push("quit")
+end
+
+function love.handlers.spawn_enemies()
+    -- create enemy
+    local enemy = {
+        -- enemy motion
+        x = 0, y = 0,
+        dv = 100, dx = 0, dy = 0,
+        -- enemy state
+        hit = false,
+        max_hp = 100, hp = 100, 
+        power = 0.25,
+        r = 10,
+    }
+
+    -- set enemy a certain radius outside screen
+    local x, y = love.graphics.getDimensions()
+    local spawn_radian = 2*math.pi * math.random()
+    local spawn_radius = 10 -- x > y and x or y
+    local offset = { x = x / 2, y = y / 2 }
+    local spawn_x = spawn_radius * math.cos(spawn_radian)
+    local spawn_y = spawn_radius * math.sin(spawn_radian)
+    spawn_x = spawn_x + offset.x
+    spawn_y = spawn_y + offset.y
+    enemy.x = spawn_x
+    enemy.y = spawn_y
+
+
+    -- set initial position offscreen
+    -- local median = {
+        -- x = love.graphics.getWidth() / 2,
+        -- y = love.graphics.getHeight() / 2
+    -- }
+    -- set enemy outside screen edge (more or less)
+    -- enemy.x = median.x + (math.random(-1, 1) * median.x + enemy.r)
+    -- enemy.y = median.y + (math.random(-1, 1) * median.y + enemy.r)
+
+    -- set initial enemy movement towards player
+    local angle = math.atan2((pl.y - enemy.y), (pl.x - enemy.x))
+    enemy.dx = enemy.dv * math.cos(angle)
+    enemy.dy = enemy.dv * math.sin(angle)
+
+    -- add enemy to the collective
+    table.insert(enemies, enemy)
 end
