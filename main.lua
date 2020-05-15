@@ -6,12 +6,7 @@
 -- merge branches and archive repo
 
 
--- XXX DONE: feature --> enemies spawn at screen edge and pursue player
--- spawn enemies outside screen
--- make enemies move towards player
--- enemies shrink when taking damage
--- change the spawn mechanism to spawn one at a time rather than in batches, but at an increasing rate that doubles every 10 kills
--- make player damage faster for more enemies (reduce enemy power to a fraction of an integer, deal it for each enemy colliding with player)
+-- XXX DONE: feature --> improved enemy spawn mechanics
 --
 
 
