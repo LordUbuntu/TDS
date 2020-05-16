@@ -16,9 +16,11 @@ Top Down Shooter (TDS) is a rudimentary top down shooter game using the [love2d]
 
 
 # Screenshots
-<!-- TODO -->
+![Screenshot 1](screenshots/screenshot1.png)
+![Screenshot 2](screenshots/screenshot2.png)
+![Screenshot 3](screenshots/screenshot3.png)
 
 
 
 # Download
-Releases are archived into a .love file in the releases page.
+Releases are archived into a .love file in the releases page. To run the game, simply download the latest release and run with [love2d](https://love2d.org).
