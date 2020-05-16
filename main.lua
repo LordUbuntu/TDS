@@ -6,7 +6,6 @@
 
 
 
-
 -- LOAD --
 function love.load()
 	-- player table
