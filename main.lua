@@ -1,13 +1,9 @@
 -- TODO
--- make enemies spawn out in radius instead
 -- make binaries and document build instructions
 -- polish game source
 -- improve code maintainability and readability
 -- merge branches and archive repo
 
-
--- XXX DONE: feature --> improved enemy spawn mechanics
---
 
 
 
@@ -36,6 +32,10 @@ function love.load()
 
 	-- bullet table
 	bullets = {}
+    gun = { 
+        cooldown = 0,
+        fire_rate = 1 / 16 -- number of shots per second
+    }
 
 
     -- enemies table
@@ -44,6 +44,12 @@ function love.load()
         cooldown = 0,
         freq = 0.2, -- spawn rate
     }
+
+
+    -- color definitions
+    silver = {250, 250, 250, 255}
+    terminal = {0, 255, 0, 250}
+    virus = {255, 0, 0, 255}
 end
 
 -- UPDATE --
@@ -65,11 +71,16 @@ function love.update(dt)
 
     -- machine gun
     if love.mouse.isDown(1) then
-        local mouse = {
-            x = love.mouse.getX(),
-            y = love.mouse.getY(),
-        }
-        love.event.push("shoot", mouse.x, mouse.y)
+        if gun.cooldown > 0 then
+            gun.cooldown = gun.cooldown - 1 * dt
+        else
+            local mouse = {
+                x = love.mouse.getX(),
+                y = love.mouse.getY(),
+            }
+            love.event.push("shoot", mouse.x, mouse.y)
+            gun.cooldown = gun.fire_rate
+        end
     end
 
     -- stop player at window edge
@@ -140,13 +151,6 @@ function love.update(dt)
             else
                 enemy.hit = false
             end
-            -- clean strays
-            if bullet.x > love.graphics.getWidth() or bullet.x < 0 then
-                table.remove(bullets, bullet_index)
-            end
-            if bullet.y > love.graphics.getHeight() or bullet.y < 0 then
-                table.remove(bullets, bullet_index)
-            end
         end
     end
 
@@ -201,20 +205,19 @@ end
 function love.draw()
 	-- draw bullets
 	for _, bullet in ipairs(bullets) do
-        love.graphics.setColor(200, 200, 200, 255)
+        love.graphics.setColor(terminal)
         love.graphics.circle("fill", bullet.x, bullet.y, bullet.r)
 	end
 
     -- draw enemies
     for _, enemy in ipairs(enemies) do
-        love.graphics.setColor(255, 0, enemy.max_hp - enemy.hp, 255)
+        love.graphics.setColor(virus)
         love.graphics.circle("line", enemy.x, enemy.y, enemy.r + enemy.hp / enemy.max_hp)
     end
 
     -- draw player
-    love.graphics.setColor(255, 0, 255, 255)
+    love.graphics.setColor(terminal)
     love.graphics.circle("line", pl.x, pl.y, pl.r)
-    love.graphics.setColor(255, 255, 255, 255)
 
     -- draw hud
     -- reset color to opaque white
@@ -224,8 +227,8 @@ function love.draw()
     redp = (pl.max_hp - pl.hp) / pl.max_hp
     love.graphics.setColor(redp, greenp, 0, 255)
     love.graphics.rectangle("fill", 5, 5, pl.hp, 4) -- health bar
-    love.graphics.setColor(255, 255, 255, 255)
     -- show score
+    love.graphics.setColor(terminal)
     love.graphics.print("score: "..score, 0, 15)
     love.graphics.print("high score: "..high_score, 0, 30)
 end
@@ -282,7 +285,7 @@ function love.handlers.shoot(x, y)
         dv = 1000 / 2, dx = 0, dy = 0,
         
         -- bullet state
-        power = 20
+        power = 50
     }
 
     -- set initial bullet position
