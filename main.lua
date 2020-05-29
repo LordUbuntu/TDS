@@ -184,9 +184,9 @@ function love.update(dt)
             score = score + 1
             enemies.anger = enemies.anger + 1
         end
-        if pl.hp < 0 then -- end game if player dies
-            love.event.push("game_over")
-        end
+    end
+    if pl.hp < 0 then -- end game if player dies
+        love.event.push("game_over")
     end
 
     -- apply powerups to player on pickup
